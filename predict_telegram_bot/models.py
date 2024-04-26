@@ -74,7 +74,7 @@ class Student(models.Model):
     )  # Участие/неучастие в олимпиадах
 
     def __str__(self):
-        return self.full_name
+        return str(self.id)
 
     class Meta:
         verbose_name = 'Студент'
@@ -179,3 +179,36 @@ class PointsPerSemester(models.Model):
     class Meta:
         verbose_name = 'Баллы в семестре'
         verbose_name_plural = 'Баллы в семестре'
+
+
+#  Соответствие @username и номерам студ.
+class TelegramUsers(models.Model):
+    choice_status = [
+        ('R', 'Зарегистрирован'),
+        ('U', 'Не зарегистрирован'),
+        ('W', 'Ожидает проверки'),
+        ('C', 'Ошибка в информации пользователя')
+    ]
+    tg_username = models.CharField(
+        verbose_name='Никнейм',
+        max_length=35,
+    )
+    tg_id = models.PositiveBigIntegerField(
+        verbose_name='Идентификатор',
+        default=0,
+    )
+    user_info = models.TextField(verbose_name='Информация пользователя')
+    status = models.CharField(
+        verbose_name='Статус заявки',
+        choices=choice_status,
+        max_length=10,
+        default='W',
+    )
+    check_application = models.BooleanField(verbose_name='Заявка просмотрена')
+
+    def __str__(self):
+        return f'{self.tg_username}'
+
+    class Meta:
+        verbose_name = 'Телеграмм'
+        verbose_name_plural = 'Телеграмм'

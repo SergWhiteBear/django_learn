@@ -17,9 +17,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
+# <Secret info>
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '<Secret>'
+SECRET_KEY = '<Secret info>'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -67,7 +67,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'django_predict_conf.wsgi.application'
+WSGI_APPLICATION = 'django_conf.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -119,5 +119,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DJANGO_ALLOW_ASYNC_UNSAFE = True
-
-TELEGRAM_TOKEN = '<Secret>'
+# <Secret info>
+TELEGRAM_TOKEN = '<Secret info>'
