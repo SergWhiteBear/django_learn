@@ -143,6 +143,7 @@ class StudyExam(models.Model):
         default=0
     )
     exam_predict = models.FloatField(
+        verbose_name='Предсказание',
         editable=False,
         default=0
     )
@@ -162,16 +163,15 @@ class PointsPerSemester(models.Model):
         on_delete=models.CASCADE,
         to_field='id',
         default=None,
-        editable=False
     )  # Ф. И. О.
     name_subject = models.ForeignKey(
         StudySubject,
         verbose_name='Предмет',
         on_delete=models.CASCADE,
-        editable=False
     )
     subject_score = models.FloatField(verbose_name='Балл за предмет', default=0)
     attending_classes = models.FloatField(verbose_name='Посещение', default=0)
+    predict_points = models.FloatField(verbose_name='Предсказание', default=0, editable=False)
 
     def __str__(self):
         return f'{self.name_subject}'
