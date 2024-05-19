@@ -18,7 +18,7 @@ logger = BotLogger('bot.log')
 def send_welcome(message):
     try:
         logger.log_info(f"Команда /start вызвана пользователем {message.from_user.username}")
-        start_msg = bot.reply_to(message, f"""\
+        bot.reply_to(message, f"""\
 Добро пожаловать, {message.from_user.username}! Я PredictBot. 
 Я здесь, чтобы помочь вам с прогнозированием вашей учебы. 
 Вы можете узнать, что я умею, с помощью команды /help.""")
@@ -33,14 +33,16 @@ def get_status_user(message):
     try:
         user = TelegramUserManager.check_auth(message.from_user.id)
         if user is False:
-            status_msg = bot.send_message(message.from_user.id, f"""\
+            bot.send_message(message.from_user.id, f"""\
 Поскольку вы не зарегистрированы, мне нужно собрать некоторую информацию о вас.
 Эта информация будет отправлена администратору для обработки.
 После подтверждения вашей информации вы сможете воспользоваться всей моей функциональностью.
             """)
-            regist_msg = bot.send_message(message.from_user.id, f"""Начнем регистрацию. 
-Пожалуйста, отправьте мне свой студенческий номер.""")
-            user_states[message.chat.id] = "stud_id"
+            markup = types.InlineKeyboardMarkup()
+            get_confirm_user = types.InlineKeyboardButton("Да!", callback_data='get_confirm')
+            get_cancel_user = types.InlineKeyboardButton("Нет:(", callback_data='get_cancel')
+            markup.add(get_confirm_user, get_cancel_user)
+            bot.send_message(message.from_user.id, 'Приступим к регистрации?', reply_markup=markup)
         elif user and user.status == 'W':
             start_msg = bot.send_message(message.from_user.id, "Ожидайте подтверждения")
             sent_messages.append(start_msg)
@@ -54,15 +56,32 @@ def get_status_user(message):
         logger.log_error(f"Произошла ошибка при обработке команды /status: {str(e)}")
 
 
-@bot.message_handler(func=lambda message: user_states.get(message.chat.id) == 'stud_id')
+@bot.callback_query_handler(func=lambda call: call.data == 'get_confirm')
+def get_confirm(call):
+    user = TelegramUserManager.check_auth(call.from_user.id)
+    if user and user.status == 'R':
+        bot.send_message(call.from_user.id, f"""Хм... Возникла ошибка, вы уже зарегистрированы""")
+    elif user and user.status == 'W':
+        bot.send_message(call.from_user.id, f"""Ожидайте проверки""")
+    else:
+        bot.send_message(call.from_user.id, f"""Начнем регистрацию. 
+            Пожалуйста, отправьте мне свой студенческий номер.""")
+        user_states[call.from_user.id] = "stud_id"
+
+@bot.callback_query_handler(func=lambda call: call.data == 'get_cancel')
+def get_cancel(call):
+    bot.send_message(call.from_user.id, f"""Жаль""")
+
+
+@bot.message_handler(func=lambda call: user_states.get(call.chat.id) == 'stud_id')
 def get_stud_id(message):
     try:
         registration_data[message.from_user.id] = {
             "stud_id": message.text}  # Проверять чтобы записывался только номер без пробелов и тд
-        dialog_msg = bot.send_message(message.from_user.id, f"""Понял!""")
+        bot.send_message(message.from_user.id, f"""Понял!""")
         logger.log_info(f"Пользователь ввел студенческий номер.")
         user_states[message.from_user.id] = "name"
-        regist_msg = bot.send_message(message.chat.id, f"""Пожалуйста, отправьте мне свое полное имя.""")
+        bot.send_message(message.chat.id, f"""Пожалуйста, отправьте мне свое полное имя.""")
     except Exception as e:
         logger.log_error(f"Произошла ошибка при обработке сообщения о студенческом номере: {str(e)}")
 
@@ -71,10 +90,10 @@ def get_stud_id(message):
 def get_full_name(message):
     try:
         registration_data[message.chat.id]["name"] = message.text
-        dialog_msg = bot.send_message(message.from_user.id, f"""Понял!""")
+        bot.send_message(message.from_user.id, f"""Понял!""")
         logger.log_info(f"Пользователь ввел полное имя.")
         user_states[message.from_user.id] = "group"
-        regist_msg = bot.send_message(message.from_user.id, f"""Отправьте мне название вашей группы.""")
+        bot.send_message(message.from_user.id, f"""Отправьте мне название вашей группы.""")
     except Exception as e:
         logger.log_error(f"Произошла ошибка при обработке сообщения о полном имени: {str(e)}")
 
@@ -83,11 +102,11 @@ def get_full_name(message):
 def get_group_name(message):
     try:
         registration_data[message.from_user.id]["group"] = message.text
-        dialog_msg = bot.send_message(message.from_user.id,
-                                      f"""Да! Вы {message.from_user.username}!""")
+        bot.send_message(message.from_user.id,
+                         f"""Да! Вы {message.from_user.username}!""")
         logger.log_info(f"Пользователь ввел название группы.")
         user_states[message.from_user.id] = None  # сброс состояния
-        final_msg = bot.send_message(message.from_user.id, f"""Все готово!""")
+        bot.send_message(message.from_user.id, f"""Все готово!""")
         TelegramUserManager.register_user(message.from_user.id, message.from_user.username, registration_data)
         bot.send_message(
             message.chat.id,
@@ -112,16 +131,22 @@ def send_info_about_user(message):
             response += f"Студенческий билет: {info['stud_id']}\n"
             response += f"Полное имя: {info['name']}\n"
             response += f"Группа: {info['group']}\n"
-
+            bot.send_message(chat_id, response)
         else:
             response = "К сожалению, нет информации о пользователе."
-        bot.send_message(chat_id, response)
         logger.log_info(f"Отправлена информация о пользователе: {response}")
         markup = types.InlineKeyboardMarkup()
         get_predicts_button = types.InlineKeyboardButton("Предсказания", callback_data='get_predicts')
         get_study_points = types.InlineKeyboardButton("Предметы и Баллы", callback_data='get_points_subjects')
         markup.add(get_predicts_button, get_study_points)
-        bot.send_message(chat_id, 'Вы можете узнать следующую информацию', reply_markup=markup)
+        user = TelegramUserManager.check_auth(message.from_user.id)
+        if user is False:
+            bot.send_message(chat_id, 'Пройдите регистрацию')
+        elif user and user.status == 'W':
+            bot.send_message(chat_id, 'Ваша информация ожидает подтверждения')
+            bot.send_message(chat_id, 'После подтверждения информации админом, вам станут доступны все команды')
+        else:
+            bot.send_message(chat_id, 'Вы можете узнать следующую информацию', reply_markup=markup)
     except Exception as e:
         logger.log_error(f"Произошла ошибка при выполнении команды /me: {str(e)}")
 

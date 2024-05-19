@@ -1,5 +1,5 @@
+
 from django.db import models
-from .validate import validate_global_group, validate_local_group
 
 
 class DirectionOfStudy(models.Model):
@@ -10,7 +10,7 @@ class DirectionOfStudy(models.Model):
     )  # Направление
 
     def __str__(self):
-        return self.direction_of_study
+        return f'{self.direction_of_study}'
 
     class Meta:
         verbose_name = 'Направление'
@@ -25,20 +25,20 @@ class Group(models.Model):
     )  # Направление обучения
     local_name = models.CharField(
         verbose_name='Внутреннее название',
-        max_length=10,
+        max_length=50,
         default='КН-',
-        validators=[validate_local_group]
+        # validators=[validate_local_group]
     )  # Внутреннее название (пр-р: КН-304)
     global_name = models.CharField(
         verbose_name='Внешнее название',
-        max_length=10,
+        max_length=50,
         default='МЕН-',
-        validators=[validate_global_group],
+        # validators=[validate_global_group],
         primary_key=True
     )  # Внешнее название (пр-р: МЕН-310204)
 
     def __str__(self):
-        return self.global_name
+        return f'{self.global_name}'
 
     class Meta:
         verbose_name = 'Группа'
@@ -66,15 +66,9 @@ class Student(models.Model):
         on_delete=models.CASCADE,
         to_field='global_name'
     )  # Название и номер группы
-    olympiad = models.CharField(
-        verbose_name='Участие/неучастие в олимпиадах',
-        max_length=100,
-        choices=olympiad_сhoice,
-        default='Не выбрано'
-    )  # Участие/неучастие в олимпиадах
 
     def __str__(self):
-        return str(self.id)
+        return f'{self.id}'
 
     class Meta:
         verbose_name = 'Студент'
@@ -82,34 +76,82 @@ class Student(models.Model):
 
 
 class SchoolExam(models.Model):
-    stud_id = models.ForeignKey(
+    stud_id = models.OneToOneField(
         Student,
         verbose_name='Студент',
         on_delete=models.CASCADE,
-        related_name='SchoolExam'
     )  # Ф. И. О.
-    exam_name = models.CharField(
-        max_length=15,
-        verbose_name='Название экзамена'
+    total_score = models.FloatField(
+        verbose_name='Всего',
+        default=0
     )
-    exam_score = models.FloatField(
-        default=0,
-        verbose_name='Балл'
+    exam_rus = models.FloatField(
+        verbose_name='Русский язык',
+        default=0
+    )
+    exam_math = models.FloatField(
+        verbose_name='Математика',
+        default=0
+    )
+    exam_physic = models.FloatField(
+        verbose_name='Физика',
+        default=0
+    )
+    exam_inf = models.FloatField(
+        verbose_name='Информатика',
+        default=0
+    )
+    extra_score = models.FloatField(
+        verbose_name='Доп. баллы Егэ',
+        default=0
     )
 
     def __str__(self):
-        return self.exam_name
+        return f'{self.stud_id}'
 
     class Meta:
-        unique_together = ['exam_name', 'stud_id']
         verbose_name = 'Школьный экзамен'
         verbose_name_plural = 'Школьные экзамены'
+
+
+class StudentRating(models.Model):
+    STATUS_CHOICES = [
+        ("s", "Успешный"),
+        ("n", "Неуспешный"),
+        ("w", "Нет прогноза"),
+    ]
+    stud_id = models.ForeignKey(
+        Student,
+        verbose_name='Студент',
+        on_delete=models.CASCADE
+    )
+    sumRate = models.FloatField(
+        verbose_name='sumRate',
+        default=0
+    )
+    rate = models.FloatField(
+        verbose_name='rate',
+        default=0
+    )
+    predict_academic_success = models.CharField(
+        verbose_name='Прогноз успеха в учебе',
+        choices=STATUS_CHOICES,
+        max_length=1,
+        default='w'
+    )
+
+    def __str__(self):
+        return f'{self.stud_id}'
+
+    class Meta:
+        verbose_name = 'Рейтинг'
+        verbose_name_plural = 'Рейтинг'
 
 
 class StudySubject(models.Model):
     subject_name = models.CharField(
         max_length=10,
-        verbose_name='Название предмета'
+        verbose_name='Название предмета',
     )
     direction_of_study = models.ManyToManyField(
         DirectionOfStudy,
@@ -154,6 +196,7 @@ class StudyExam(models.Model):
     class Meta:
         verbose_name = 'Экзамен'
         verbose_name_plural = 'Экзамены'
+        unique_together = (("name_exam", "stud_id"),)
 
 
 class PointsPerSemester(models.Model):
@@ -179,6 +222,7 @@ class PointsPerSemester(models.Model):
     class Meta:
         verbose_name = 'Баллы в семестре'
         verbose_name_plural = 'Баллы в семестре'
+        unique_together = (("name_subject", "stud_id"),)
 
 
 #  Соответствие @username и номерам студ.

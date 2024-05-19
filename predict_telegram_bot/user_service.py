@@ -1,5 +1,3 @@
-import telebot
-from django.db import transaction
 from .models import *
 
 
@@ -28,16 +26,19 @@ class TelegramUserManager:
 
     @staticmethod
     def get_student_info(chat_id):
-        user = TelegramUserManager.check_auth(chat_id)
-        if user:
-            student_id = user.user_info.splitlines()[0]
-            student = Student.objects.get(id=student_id)
-            return {
-                'stud_id': student.id,
-                'name': student.full_name,
-                'group': student.group_name.global_name
-            }
-        else:
+        try:
+            user = TelegramUserManager.check_auth(chat_id)
+            if user:
+                student_id = user.user_info.splitlines()[0]
+                student = Student.objects.get(id=student_id)
+                return {
+                    'stud_id': student.id,
+                    'name': student.full_name,
+                    'group': student.group_name.global_name
+                }
+            else:
+                return False
+        except:
             return False
 
     @staticmethod
