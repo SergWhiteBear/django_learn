@@ -1,10 +1,10 @@
 from django.core.management.base import BaseCommand
 
-from predict_telegram_bot.data.import_excel_data import run
+from predict_telegram_bot.predict_model.classifier_model import run
 
 
 class Command(BaseCommand):
-    help = 'Запуск импорта'
+    help = 'Обучение модели'
 
     def handle(self, *args, **options):
         file_path = ''
@@ -14,11 +14,12 @@ class Command(BaseCommand):
             with open(file_path, 'r') as file:
                 self.stdout.write(self.style.SUCCESS(f'Файл найден'))
                 run(file_path)
+                self.stdout.write(self.style.SUCCESS(f'Модель обучена'))
         except FileNotFoundError:
             self.stderr.write(self.style.ERROR(f'Ошибка: Файл {file_path} не найден'))
         else:
             try:
-                run()
+                run(file_path)
             except Exception as e:
                 self.stderr.write(self.style.ERROR(f'Ошибка: {e}'))
 
@@ -27,5 +28,5 @@ class Command(BaseCommand):
             '-p',
             '--path',
             type=str,
-            help='Путь к файлу для чтения'
+            help='Путь к файлу для чтения данных для обучения'
         )

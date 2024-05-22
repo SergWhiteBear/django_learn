@@ -2,13 +2,11 @@ import pandas as pd
 
 from predict_telegram_bot.models import Student, DirectionOfStudy, Group, SchoolExam, StudentRating
 
+file_path_standart = 'predict_telegram_bot/data/БаллыЕГЭ.xlsx'
 
-def import_data(file_path_school):
-    try:
-        sheet_names = pd.ExcelFile(file_path_school).sheet_names
-    except Exception as e:
-        print(e)
-    for sheet_name in sheet_names:
+
+def import_data(file_path=file_path_standart):
+    for sheet_name in pd.ExcelFile(file_path).sheet_names:
         direction = DirectionOfStudy(
             direction_of_study=sheet_name
         )
@@ -20,15 +18,12 @@ def import_data(file_path_school):
         direction.save()
         group.save()
 
-        try:
-            df = pd.read_excel(file_path_school, usecols='A:L', sheet_name=sheet_name)
-        except Exception as e:
-            print(e)
+        df = pd.read_excel(file_path, sheet_name=sheet_name)
         for index, row in df.iterrows():
             try:
                 student = Student(
                     id=row['stud_id'],
-                    full_name=row['ФИО'],
+                    full_name=row['full_name'],
                     group_name=group
                 )
                 school_exam = SchoolExam(
@@ -52,9 +47,5 @@ def import_data(file_path_school):
                 print(e)
 
 
-
-file_path_school = 'predict_telegram_bot/data/БаллыЕГЭ.xlsx'
-
-
-def run():
-    import_data(file_path_school, )
+def run(file_path=file_path_standart):
+    import_data(file_path)

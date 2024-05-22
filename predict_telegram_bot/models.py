@@ -81,7 +81,7 @@ class SchoolExam(models.Model):
         verbose_name='Студент',
         on_delete=models.CASCADE,
     )  # Ф. И. О.
-    total_score = models.FloatField(
+    exam_score = models.FloatField(
         verbose_name='Всего',
         default=0
     )
