@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import classification_report, accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, roc_auc_score, roc_curve
 
 # Пути к файлам с данными
-file_path_school = '/django_predict/predict_telegram_bot/data/БаллыЕГЭ.xlsx'
+file_path_school = 'C:\\Users\\Sergey\\Desktop\\djangoStudy\\django_predict\\predict_telegram_bot\\data\\БаллыЕГЭ.xlsx'
 
 # Загрузка данных
 df = pd.concat(pd.read_excel(file_path_school, sheet_name=None), ignore_index=True)
@@ -25,7 +25,7 @@ df['успешность'] = df['Рейтинг'] > 60
 df_new['успешность'] = df_new['Рейтинг'] > 60
 
 # Выбор признаков
-features = ['stud_id', 'total_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score']
+features = ['total_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score']
 
 # Добавление новых признаков
 # 1. Средний балл по всем экзаменам

@@ -1,7 +1,10 @@
 import pickle
+
+import numpy as np
 import pandas as pd
 from django.contrib import admin
 from django.db import transaction
+from django.http import HttpResponse
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.http import urlencode
@@ -12,8 +15,8 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
     classification_report, roc_auc_score, roc_curve
 from .models import *
 
-predict_model = pickle.load(open('predict_telegram_bot/predict_model/best_gradient_boosting_model.pkl', 'rb'))
-scaler = pickle.load((open('predict_telegram_bot/predict_model/scaler_fit.pkl', 'rb')))
+best_logistic_regression_model = pickle.load(open('predict_telegram_bot/best_gradient_boosting_model.pkl', 'rb'))
+scaler = pickle.load(open('predict_telegram_bot/scaler_fit.pkl', 'rb'))
 
 
 @admin.register(DirectionOfStudy)
@@ -79,48 +82,44 @@ class SchoolExamAdmin(admin.ModelAdmin):
 
 
 @admin.action(description='Выполнить прогноз для студента/ов')
-def make_predict(modeladmin, request, queryset):
-    # Собрать данные в DataFrame
+def make_predict(self, request, queryset):
+    # Сбор данных о студентах
     data = []
     for obj in queryset:
+        # Получение данных из базы данных или других источников
         school_exam = SchoolExam.objects.get(stud_id=obj.stud_id)
-        phy_or_inf = max(school_exam.exam_physic, school_exam.exam_inf)
         features = [
             school_exam.total_score,
-            school_exam.exam_rus,
             school_exam.exam_math,
-            phy_or_inf,
+            max(school_exam.exam_physic, school_exam.exam_inf),
+            school_exam.exam_rus,
             school_exam.extra_score
         ]
-        data.append((obj.stud_id.id, *features))
+        data.append(features)
 
-    df = pd.DataFrame(data,
-                      columns=['stud_id', 'total_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score'])
-    features = ['stud_id', 'total_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score']
-
+    # Создание DataFrame
+    df = pd.DataFrame(data, columns=['total_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score'])
+    features = ['total_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score']
+    # Добавление новых признаков
     df['avg_exam_score'] = df[['exam_math', 'phy_or_inf', 'exam_rus']].mean(axis=1)
-    threshold_score = 80
-    df['exams_above_threshold'] = (df[['exam_math', 'phy_or_inf', 'exam_rus']] > threshold_score).sum(
-        axis=1)
+    threshold_score = 70
+    df['exams_above_threshold'] = (df[['exam_math', 'phy_or_inf', 'exam_rus']] > threshold_score).sum(axis=1)
     features += ['avg_exam_score', 'exams_above_threshold']
-
-    # Подготовка новых данных
+    # Стандартизация данных
     X = df[features]
 
     # Стандартизация данных
     X = scaler.transform(X)
 
     # Предсказание
-    y_pred = predict_model.predict(X)
+    predictions = best_logistic_regression_model.predict(X)
+    print(predictions)
+    predictions_mapped = ['s' if pred else 'n' for pred in predictions]
 
-    predictions_mapped = ['s' if pred else 'n' for pred in y_pred]
-    for stud_id, prediction in zip(df['stud_id'], predictions_mapped):
-        StudentRating.objects.filter(stud_id=stud_id).update(predict_academic_success=prediction)
-    # Проверки
     y_true = [StudentRating.objects.get(stud_id=obj.stud_id).rate > 60 for obj in queryset]
-    print(f'Точность: {accuracy_score(y_pred, y_true)}')
-    print(classification_report(y_pred, y_true))
-    print(confusion_matrix(y_pred, y_true))
+    print(f'Точность: {accuracy_score(predictions, y_true)}')
+    print(classification_report(predictions, y_true))
+    print(confusion_matrix(predictions, y_true))
 
 
 @admin.register(StudentRating)
