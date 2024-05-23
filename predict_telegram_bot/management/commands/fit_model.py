@@ -7,19 +7,19 @@ class Command(BaseCommand):
     help = 'Обучение модели'
 
     def handle(self, *args, **options):
-        file_path = ''
+
         if options['path']:
             file_path = options['path']
-        try:
-            with open(file_path, 'r') as file:
-                self.stdout.write(self.style.SUCCESS(f'Файл найден'))
-                run(file_path)
-                self.stdout.write(self.style.SUCCESS(f'Модель обучена'))
-        except FileNotFoundError:
-            self.stderr.write(self.style.ERROR(f'Ошибка: Файл {file_path} не найден'))
+            try:
+                with open(file_path, 'r') as file:
+                    self.stdout.write(self.style.SUCCESS(f'Файл найден'))
+                    run(file_path)
+                    self.stdout.write(self.style.SUCCESS(f'Модель обучена'))
+            except FileNotFoundError:
+                self.stderr.write(self.style.ERROR(f'Ошибка: Файл {file_path} не найден'))
         else:
             try:
-                run(file_path)
+                pass
             except Exception as e:
                 self.stderr.write(self.style.ERROR(f'Ошибка: {e}'))
 

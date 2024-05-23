@@ -11,9 +11,8 @@ from admincharts.admin import AdminChartMixin
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from .models import *
 
+
 # !!! Поправить пути для файлов, если создавать модель через консоль путь отличается
-best_logistic_regression_model = pickle.load(open('predict_telegram_bot/predict_model/best_gradient_boosting_model.pkl', 'rb'))
-scaler = pickle.load(open('predict_telegram_bot/predict_model/scaler_fit.pkl', 'rb'))
 
 
 @admin.register(DirectionOfStudy)
@@ -81,6 +80,10 @@ class SchoolExamAdmin(admin.ModelAdmin):
 @admin.action(description='Выполнить прогноз для студента/ов')
 def make_predict(modelname, request, queryset):
     # Сбор данных о студентах
+
+    best_logistic_regression_model = pickle.load(
+        open('/django_predict/predict_telegram_bot/predict_model/good_model/best_gradient_boosting_model.pkl', 'rb'))
+    scaler = pickle.load(open('/django_predict/predict_telegram_bot/predict_model/good_model/scaler_fit.pkl', 'rb'))
     data = []
     for obj in queryset:
         # Получение данных из базы данных или других источников
@@ -89,19 +92,22 @@ def make_predict(modelname, request, queryset):
             obj.stud_id,
             school_exam.exam_score,
             school_exam.exam_math,
-            max(school_exam.exam_physic, school_exam.exam_inf),
+            school_exam.exam_inf,
+            school_exam.exam_physic,
             school_exam.exam_rus,
             school_exam.extra_score
         ]
         data.append(features)
 
     # Создание DataFrame
-    df = pd.DataFrame(data, columns=['stud_id', 'exam_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score'])
-    features = ['exam_score', 'exam_math', 'phy_or_inf', 'exam_rus', 'extra_score']
+    df = pd.DataFrame(data, columns=['stud_id', 'exam_score', 'exam_math', 'exam_inf', 'exam_physic', 'exam_rus',
+                                     'extra_score'])
+    features = ['exam_score', 'exam_math', 'exam_inf', 'exam_physic', 'exam_rus', 'extra_score']
     # Добавление новых признаков
-    df['avg_exam_score'] = df[['exam_math', 'phy_or_inf', 'exam_rus']].mean(axis=1)
+    df['avg_exam_score'] = df[['exam_math', 'exam_inf', 'exam_physic', 'exam_rus']].mean(axis=1)
     threshold_score = 70
-    df['exams_above_threshold'] = (df[['exam_math', 'phy_or_inf', 'exam_rus']] > threshold_score).sum(axis=1)
+    df['exams_above_threshold'] = (df[['exam_math', 'exam_inf', 'exam_physic', 'exam_rus']] > threshold_score).sum(
+        axis=1)
     features += ['avg_exam_score', 'exams_above_threshold']
     # Стандартизация данных
     x = df[features]

@@ -16,11 +16,6 @@ class Command(BaseCommand):
                 run(file_path)
         except FileNotFoundError:
             self.stderr.write(self.style.ERROR(f'Ошибка: Файл {file_path} не найден'))
-        else:
-            try:
-                run()
-            except Exception as e:
-                self.stderr.write(self.style.ERROR(f'Ошибка: {e}'))
 
     def add_arguments(self, parser):
         parser.add_argument(
