@@ -7,7 +7,6 @@ from django.utils.html import format_html
 from django.utils.http import urlencode
 from django.dispatch import receiver
 from django.db.models.signals import post_save, m2m_changed
-from admincharts.admin import AdminChartMixin
 from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
 from .models import *
 
@@ -134,11 +133,6 @@ class StudentRatingAdmin(admin.ModelAdmin):
     actions = [make_predict]
     raw_id_fields = ('stud_id',)
 
-    list_chart_type = "pie"  # Тип графика
-    list_chart_data = {'rate', 'stud_id__group_name'}  # Данные для графика
-    list_chart_options = {"colors": ["#3366cc"]}  # Цвета для графика
-    list_chart_config = None  # Переопределение общих настроек
-
 
 @admin.register(StudySubject)
 class StudySubjectAdmin(admin.ModelAdmin):
@@ -154,7 +148,7 @@ class StudySubjectAdmin(admin.ModelAdmin):
 
 
 @admin.register(StudyExam)
-class StudyExamAdmin(AdminChartMixin, admin.ModelAdmin):
+class StudyExamAdmin(admin.ModelAdmin):
     list_display = ('name_exam', 'stud_id', 'final_score', 'exam_predict')
     search_fields = ('name_exam__subject_name__startswith', 'stud_id__full_name__startswith',)
     raw_id_fields = ['name_exam', 'stud_id', ]
